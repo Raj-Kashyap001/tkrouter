@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 import threading
 import tkinter as tk
+import queue
 
 
 @dataclass
@@ -25,7 +26,7 @@ class AsyncBridge:
     """
     Thread-safe bridge for running async operations without blocking Tkinter's main loop.
     
-    Uses ThreadPoolExecutor for background tasks and Tkinter's after() method
+    Uses ThreadPoolExecutor for background tasks and a queue-based polling system
     to ensure all UI updates happen on the main thread.
     """
     
@@ -42,6 +43,32 @@ class AsyncBridge:
         self._cache: Dict[str, CacheEntry] = {}
         self._cache_lock = threading.Lock()
         self._pending_futures: Dict[str, Future] = {}
+        self._callback_queue = queue.Queue()
+        self._poll_id = None
+        self._start_polling()
+        
+    def _start_polling(self) -> None:
+        """Start polling the callback queue."""
+        self._poll_id = self.root.after(10, self._poll_for_callbacks)
+        
+    def _poll_for_callbacks(self) -> None:
+        """Poll the queue for callbacks to execute on the main thread."""
+        try:
+            # Process as many callbacks as possible in one go
+            while True:
+                try:
+                    callback_func = self._callback_queue.get_nowait()
+                    callback_func()
+                except queue.Empty:
+                    break
+        except Exception as e:
+            print(f"Error in async callback: {e}")
+        finally:
+            # Always reschedule unless we're shutting down
+            try:
+                self._poll_id = self.root.after(10, self._poll_for_callbacks)
+            except (tk.TclError, RuntimeError):
+                self._poll_id = None
         
     def run_async(
         self,
@@ -70,11 +97,11 @@ class AsyncBridge:
             try:
                 result = fut.result()
                 if callback:
-                    # Schedule callback on main thread
-                    self.root.after(0, lambda r=result: callback(r))
+                    # Put callback on queue for main thread execution
+                    self._callback_queue.put(lambda r=result: callback(r))
             except Exception as e:
                 if error_callback:
-                    self.root.after(0, lambda err=e: error_callback(err))
+                    self._callback_queue.put(lambda err=e: error_callback(err))
                 else:
                     print(f"Async error: {e}")
         
@@ -114,8 +141,9 @@ class AsyncBridge:
             # Check if we have valid cached data
             if cached and cached.is_valid():
                 if callback:
-                    # Return cached data immediately
-                    self.root.after(0, lambda: callback(cached.data))
+                    # Return cached data immediately via queue for consistency
+                    data = cached.data
+                    self._callback_queue.put(lambda d=data: callback(d))
                 
                 # If revalidate is True, fetch fresh data in background
                 if not revalidate:
@@ -177,4 +205,10 @@ class AsyncBridge:
     
     def shutdown(self) -> None:
         """Shutdown the thread pool executor."""
+        if self._poll_id:
+            try:
+                self.root.after_cancel(self._poll_id)
+            except (tk.TclError, RuntimeError):
+                pass
+            self._poll_id = None
         self.executor.shutdown(wait=True)
