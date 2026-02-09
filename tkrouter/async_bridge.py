@@ -71,10 +71,10 @@ class AsyncBridge:
                 result = fut.result()
                 if callback:
                     # Schedule callback on main thread
-                    self.root.after(0, lambda: callback(result))
+                    self.root.after(0, lambda r=result: callback(r))
             except Exception as e:
                 if error_callback:
-                    self.root.after(0, lambda: error_callback(e))
+                    self.root.after(0, lambda err=e: error_callback(err))
                 else:
                     print(f"Async error: {e}")
         

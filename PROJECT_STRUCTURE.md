@@ -15,12 +15,14 @@ tkrouter/
 │
 ├── examples/                   # Example applications
 │   ├── quick_start.py          # Simple 2-page example
-│   └── demo.py                 # Full-featured demo with async
+│   └── user_management.py      # Full-featured demo with async
 │
 ├── tests/                      # Unit tests
 │   ├── __init__.py
+│   ├── run_tests.py            # Run All Tests
 │   ├── test_router.py
 │   ├── test_store.py
+│   ├── test_intigration.py
 │   └── test_async_bridge.py
 │
 ├── pyproject.toml              # Python package configuration
@@ -43,14 +45,14 @@ tkrouter/
 - Defines **version**
 - Defines **all** for clean imports
 
-#### `tkrouter/base.py` (62 lines)
+#### `tkrouter/base.py`
 
 - Abstract base class `View`
 - Lifecycle hooks: on_enter, on_leave, on_data_received
 - Grid management setup
 - Active state tracking
 
-#### `tkrouter/core.py` (357 lines)
+#### `tkrouter/core.py`
 
 - `Router` class - main navigation controller
 - `Store` class - observable state management
@@ -59,7 +61,7 @@ tkrouter/
 - View lifecycle management
 - Error classes: RouterError, RouteNotFoundError
 
-#### `tkrouter/async_bridge.py` (178 lines)
+#### `tkrouter/async_bridge.py`
 
 - `AsyncBridge` class - thread-safe async operations
 - `CacheEntry` - cached data with TTL
@@ -69,13 +71,13 @@ tkrouter/
 
 ### Examples
 
-#### `examples/quick_start.py` (117 lines)
+#### `examples/quick_start.py`
 
 - Minimal example with 2 views
 - Basic navigation demonstration
 - Perfect for learning the basics
 
-#### `examples/demo.py` (286 lines)
+#### `examples/user_management.py`
 
 - Complete application example
 - Async data loading
@@ -231,29 +233,6 @@ from tkrouter import Router, View, Store
 from tkrouter import AsyncBridge, RouterError, RouteNotFoundError
 ```
 
-## Testing Checklist
-
-Before publishing:
-
-- [ ] All examples run without errors
-- [ ] Import works: `python -c "from tkrouter import Router"`
-- [ ] README is clear and accurate
-- [ ] Version numbers are consistent
-- [ ] LICENSE file is present
-- [ ] Git tags match version
-- [ ] CHANGELOG is updated
-- [ ] No sensitive data in code
-
-## Size Analysis
-
-**Total Package Size:**
-
-- Source: ~30 KB
-- With docs: ~120 KB
-- Wheel: ~40 KB
-
-**Installation Size:** ~60 KB (very lightweight!)
-
 ## Dependencies
 
 **Runtime:** NONE (only Python standard library)
@@ -310,7 +289,3 @@ Potential features for v2.0:
 ## License
 
 MIT License - See LICENSE file
-
-```
-
-```
